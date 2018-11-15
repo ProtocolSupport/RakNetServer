@@ -1,4 +1,4 @@
-package raknetserver.pipeline.ecnapsulated;
+package raknetserver.pipeline.encapsulated;
 
 import java.util.HashMap;
 import java.util.List;
