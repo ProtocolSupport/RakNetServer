@@ -73,12 +73,12 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 		if (!idWithinWindow(packetSeqId)) { //ignore duplicate packet
 			return;
 		}
-		if (UINT.B3.minusWrap(packetSeqId, lastReceivedSeqId) > 0) { //can be zero on the first packet only
-			lastReceivedSeqId = UINT.B3.plus(lastReceivedSeqId, 1);
-			while (lastReceivedSeqId != packetSeqId) { //nack any missed packets before this one
-				ctx.writeAndFlush(new RakNetNACK(lastReceivedSeqId)).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
-				lastReceivedSeqId = UINT.B3.plus(lastReceivedSeqId, 1);
+		int seqIdDiff = UINT.B3.minusWrap(packetSeqId, lastReceivedSeqId);
+		if (seqIdDiff > 0) {
+			if (seqIdDiff > 1) {
+				ctx.writeAndFlush(new RakNetNACK(UINT.B3.plus(lastReceivedSeqId, 1), UINT.B3.minus(packetSeqId, 1))).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
 			}
+			lastReceivedSeqId = packetSeqId;
 		}
 		packet.getPackets().forEach(ctx::fireChannelRead); //read encapsulated packets
 	}
