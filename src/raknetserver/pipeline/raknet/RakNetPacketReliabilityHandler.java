@@ -21,8 +21,6 @@ import java.util.concurrent.TimeUnit;
 
 public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 
-	protected static final int WINDOW = 4096;
-	protected static final int HALF_WINDOW = WINDOW / 2;
 	protected static final int RTT_FLOOR = 5; //millis
 
 	protected static final PacketHandlerRegistry<RakNetPacketReliabilityHandler, RakNetPacket> registry = new PacketHandlerRegistry<>();
@@ -62,17 +60,10 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 		}
 	}
 
-	protected boolean idWithinWindow(int id) {
-		return Math.abs(UINT.B3.minusWrap(id, lastReceivedSeqId)) < HALF_WINDOW;
-	}
-
 	protected void handleEncapsulatedData(ChannelHandlerContext ctx, RakNetEncapsulatedData packet) {
 		int packetSeqId = packet.getSeqId();
-		ctx.writeAndFlush(new RakNetACK(packetSeqId)).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
-		if (!idWithinWindow(packetSeqId)) { //ignore duplicate packet
-			return;
-		}
 		int seqIdDiff = UINT.B3.minusWrap(packetSeqId, lastReceivedSeqId);
+		ctx.writeAndFlush(new RakNetACK(packetSeqId)).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
 		if (seqIdDiff > 0) {
 			if (seqIdDiff > 1) {
 				ctx.writeAndFlush(new RakNetNACK(UINT.B3.plus(lastReceivedSeqId, 1), UINT.B3.minus(packetSeqId, 1))).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
@@ -91,8 +82,7 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 				throw new DecoderException("Too big packet loss (ack confirm range)");
 			}
 			for (int i = 0; i <= idDiff; i++) {
-				int packetId = UINT.B3.plus(idStart, i);
-				RakNetEncapsulatedData packet = sentPackets.remove(packetId);
+				RakNetEncapsulatedData packet = sentPackets.remove(UINT.B3.plus(idStart, i));
 				if (packet != null) {
 					minRTT = Math.min(minRTT, Math.max(packet.timeSinceSend(), RTT_FLOOR));
 				}
