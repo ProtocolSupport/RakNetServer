@@ -8,6 +8,7 @@ import io.netty.channel.Channel;
 import io.netty.handler.codec.DecoderException;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import raknetserver.packet.EncapsulatedPacket;
 import raknetserver.packet.raknet.RakNetEncapsulatedData;
 import raknetserver.packet.raknet.RakNetPacket;
@@ -112,8 +113,6 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 			for (int i = 0; i <= idDiff; i++) {
 				RakNetEncapsulatedData packet = sentPackets.remove(UINT.B3.plus(idStart, i));
 				if (packet != null) {
-					packet.setSeqId(nextSendSeqId); //new id on nack
-					nextSendSeqId = UINT.B3.plus(nextSendSeqId, 1);
 					sendPacket(packet, null);
 				}
 			}
@@ -127,8 +126,6 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 				throw new DecoderException("Too big packet loss (unconfirmed sent packets)");
 			}
 			RakNetEncapsulatedData outPacket = new RakNetEncapsulatedData((EncapsulatedPacket) msg);
-			outPacket.setSeqId(nextSendSeqId);
-			nextSendSeqId = UINT.B3.plus(nextSendSeqId, 1);
 			sendPacket(outPacket, promise);
 		} else {
 			ctx.writeAndFlush(msg, promise);
@@ -136,6 +133,8 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 	}
 
 	protected void sendPacket(RakNetEncapsulatedData packet, ChannelPromise promise) {
+		packet.setSeqId(nextSendSeqId);
+		nextSendSeqId = UINT.B3.plus(nextSendSeqId, 1);
 		sentPackets.put(packet.getSeqId(), packet);
 		packet.refreshResend();
 		if (promise != null) {
@@ -148,6 +147,7 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 	protected void resendTick() {
 		for (RakNetEncapsulatedData packet : sentPackets.values()) {
 			if (packet.resendTick()) {
+				sentPackets.remove(packet.getSeqId());
 				sendPacket(packet, null); //resend packet
 			}
 		}
