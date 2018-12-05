@@ -33,8 +33,11 @@ public class UINT {
 			final int dist = value - minus;
 			if (dist < 0) {
 				return -minusWrap(minus, value);
+			} else if (dist > HALF_MAX) {
+				return value - (minus + MAX_VALUE + 1);
+			} else {
+				return dist;
 			}
-			return dist > HALF_MAX ? value - (minus + MAX_VALUE + 1) : dist;
 		}
 	}
 

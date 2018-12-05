@@ -125,8 +125,7 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 			if (sentPackets.size() > Constants.MAX_PACKET_LOSS) {
 				throw new DecoderException("Too big packet loss (unconfirmed sent packets)");
 			}
-			RakNetEncapsulatedData outPacket = new RakNetEncapsulatedData((EncapsulatedPacket) msg);
-			sendPacket(outPacket, promise);
+			sendPacket(new RakNetEncapsulatedData((EncapsulatedPacket) msg), promise);
 		} else {
 			ctx.writeAndFlush(msg, promise);
 		}
