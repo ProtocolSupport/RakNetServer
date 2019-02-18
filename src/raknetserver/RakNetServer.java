@@ -22,7 +22,6 @@ import raknetserver.pipeline.raknet.RakNetPacketDecoder;
 import raknetserver.pipeline.raknet.RakNetPacketEncoder;
 import raknetserver.pipeline.raknet.RakNetPacketReliabilityHandler;
 import raknetserver.utils.Constants;
-import raknetserver.utils.DefaultMetrics;
 import udpserversocketchannel.channel.UdpServerChannel;
 
 public class RakNetServer {
@@ -44,7 +43,7 @@ public class RakNetServer {
 	}
 
 	public RakNetServer(InetSocketAddress local, PingHandler pinghandler, UserChannelInitializer init, int userPacketId) {
-		this(local, pinghandler, init, userPacketId, new DefaultMetrics());
+		this(local, pinghandler, init, userPacketId, Metrics.DEFAULT);
 	}
 
 	public void start() {
@@ -82,7 +81,7 @@ public class RakNetServer {
 	}
 
 	public enum BackPressure {
-		ON, OFF;
+		ON, OFF
 	}
 
 	public interface UserChannelInitializer {
@@ -90,18 +89,20 @@ public class RakNetServer {
 	}
 
 	public interface Metrics {
-		void incrSend(int n);
-		void incrOutPacket(int n);
-		void incrRecv(int n);
-		void incrInPacket(int n);
-		void incrJoin(int n);
-		void incrResend(int n);
-		void incrAckSend(int n);
-		void incrNackSend(int n);
-		void incrAckRecv(int n);
-		void incrNackRecv(int n);
-		void measureSendAttempts(int n);
-		void measureRTTns(long n);
+		Metrics DEFAULT = new Metrics() {};
+
+		default void incrSend(int n) {}
+		default void incrOutPacket(int n) {}
+		default void incrRecv(int n) {}
+		default void incrInPacket(int n) {}
+		default void incrJoin(int n) {}
+		default void incrResend(int n) {}
+		default void incrAckSend(int n) {}
+		default void incrNackSend(int n) {}
+		default void incrAckRecv(int n) {}
+		default void incrNackRecv(int n) {}
+		default void measureSendAttempts(int n) {}
+		default void measureRTTns(long n) {}
 	}
 
 }
