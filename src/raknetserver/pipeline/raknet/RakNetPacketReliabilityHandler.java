@@ -34,28 +34,19 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 		}
 	}
 
-	protected static final int HALF_WINDOW = UINT.B3.MAX_VALUE / 2;
-
-	protected final Int2ObjectOpenHashMap<RakNetEncapsulatedData> sentPackets = new Int2ObjectOpenHashMap	<>();
+	protected final Int2ObjectOpenHashMap<RakNetEncapsulatedData> sentPackets = new Int2ObjectOpenHashMap<>();
 	protected int lastReceivedSeqId = -1;
 
 	protected void handleEncapsulatedData(ChannelHandlerContext ctx, RakNetEncapsulatedData packet) {
 		RakNetEncapsulatedData edata = packet;
 		int packetSeqId = edata.getSeqId();
 		int seqIdDiff = UINT.B3.minus(packetSeqId, lastReceivedSeqId);
-		//ignore duplicate packet
-		if ((seqIdDiff == 0) || (seqIdDiff > HALF_WINDOW)) {
-			return;
-		}
-		//send nack for missed packets
+
+		lastReceivedSeqId = packetSeqId;
+		ctx.writeAndFlush(new RakNetACK(packetSeqId)).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
 		if (seqIdDiff > 1) {
 			ctx.writeAndFlush(new RakNetNACK(UINT.B3.plus(lastReceivedSeqId, 1), UINT.B3.minus(packetSeqId, 1))).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
 		}
-		//can now update last received seq id
-		lastReceivedSeqId = packetSeqId;
-		//send ack for received packet
-		ctx.writeAndFlush(new RakNetACK(packetSeqId)).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
-		//read encapsulated packets
 		edata.getPackets().forEach(ctx::fireChannelRead);
 	}
 
