@@ -4,11 +4,9 @@ import java.net.InetSocketAddress;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFactory;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.DefaultEventLoopGroup;
-import io.netty.channel.ServerChannel;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import raknetserver.pipeline.encapsulated.EncapsulatedPacketInboundOrderer;
 import raknetserver.pipeline.encapsulated.EncapsulatedPacketOutboundOrder;
@@ -33,6 +31,8 @@ public class RakNetServer {
 	protected final UserChannelInitializer userinit;
 	protected final int userPacketId;
 
+	private ChannelFuture channel = null;
+
 	public RakNetServer(InetSocketAddress local, PingHandler pinghandler, UserChannelInitializer init, int userPacketId) {
 		this.local = local;
 		this.pinghandler = pinghandler;
@@ -40,22 +40,15 @@ public class RakNetServer {
 		this.userPacketId = userPacketId;
 	}
 
-	private ChannelFuture channel = null;
-
 	public void start() {
 		ServerBootstrap bootstrap = new ServerBootstrap()
 		.group(new DefaultEventLoopGroup())
-		.channelFactory(new ChannelFactory<ServerChannel>() {
-			@Override
-			public ServerChannel newChannel() {
-				return new UdpServerChannel(Constants.UDP_IO_THREADS);
-			}
-		})
+		.channelFactory(() -> new UdpServerChannel(Constants.UDP_IO_THREADS))
 		.childHandler(new ChannelInitializer<Channel>() {
 			@Override
-			protected void initChannel(Channel channel) throws Exception {
+			protected void initChannel(Channel channel) {
 				channel.pipeline()
-				.addLast("rns-timeout", new ReadTimeoutHandler(30))
+				.addLast("rns-timeout", new ReadTimeoutHandler(10))
 				.addLast("rns-rn-encoder", new RakNetPacketEncoder())
 				.addLast("rns-rn-decoder", new RakNetPacketDecoder())
 				.addLast("rns-rn-connect", new RakNetPacketConnectionEstablishHandler(pinghandler))
@@ -81,8 +74,8 @@ public class RakNetServer {
 		}
 	}
 
-	public static interface UserChannelInitializer {
-		public void init(Channel channel);
+	public interface UserChannelInitializer {
+		void init(Channel channel);
 	}
 
 }

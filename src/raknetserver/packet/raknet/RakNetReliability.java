@@ -14,8 +14,7 @@ public class RakNetReliability implements RakNetPacket {
 	}
 
 	public RakNetReliability(int idstart, int idfinish) {
-		entries = new REntry[1];
-		entries[0] = new REntry(idstart, idfinish);
+		entries = new REntry[] { new REntry(idstart, idfinish) };
 	}
 
 	@Override
@@ -35,9 +34,14 @@ public class RakNetReliability implements RakNetPacket {
 	public void encode(ByteBuf buf) {
 		buf.writeShort(entries.length);
 		for (REntry entry : entries) {
-			buf.writeBoolean(false);
-			buf.writeMediumLE(entry.idStart);
-			buf.writeMediumLE(entry.idFinish);
+			if (entry.idStart == entry.idFinish) {
+				buf.writeBoolean(true);
+				buf.writeMediumLE(entry.idStart);
+			} else {
+				buf.writeBoolean(false);
+				buf.writeMediumLE(entry.idStart);
+				buf.writeMediumLE(entry.idFinish);
+			}
 		}
 	}
 
