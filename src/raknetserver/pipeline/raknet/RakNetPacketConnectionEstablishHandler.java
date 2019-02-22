@@ -60,7 +60,9 @@ public class RakNetPacketConnectionEstablishHandler extends SimpleChannelInbound
 
 	@Override
 	public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-		pingTask.cancel(true);
+		if (pingTask != null) {
+			pingTask.cancel(true);
+		}
 		super.channelInactive(ctx);
 	}
 

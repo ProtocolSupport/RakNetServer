@@ -8,7 +8,7 @@ import raknetserver.packet.EncapsulatedPacket;
 public class RakNetEncapsulatedData implements RakNetPacket {
 
 	private int seqId;
-	private final ArrayList<EncapsulatedPacket> packets = new ArrayList<EncapsulatedPacket>();
+	private final ArrayList<EncapsulatedPacket> packets = new ArrayList<>();
 
 	public RakNetEncapsulatedData() {
 	}
